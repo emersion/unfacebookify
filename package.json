@@ -1,0 +1,19 @@
+{
+  "name": "unfacebookify",
+  "version": "1.0.0",
+  "description": "",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "grunt test"
+  },
+  "author": "emersion",
+  "license": "MIT",
+  "dependencies": {
+    "body-parser": "^1.8.1",
+    "ejs": "^1.0.0",
+    "errorhandler": "^1.2.0",
+    "express": "^4.8.8",
+    "fbgraph": "^0.2.11",
+    "html-linkify": "^1.2.0"
+  }
+}

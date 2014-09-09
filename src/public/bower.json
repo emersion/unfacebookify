@@ -1,0 +1,20 @@
+{
+  "name": "unfacebookify",
+  "version": "0.0.0",
+  "authors": [
+    "Emersion <contact@emersion.fr>"
+  ],
+  "license": "MIT",
+  "private": true,
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.1",
+    "bootstrap": "~3.2.0"
+  }
+}

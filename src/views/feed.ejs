@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<title>Unfacebookify</title>
+
+	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css">
+</head>
+<body>
+	<div class="container">
+		<h1>
+			<a href="" class="btn btn-default btn-lg pull-right">Refresh</a>
+			Unfacebookify
+		</h1>
+
+		<%
+		data.forEach(function (post) {
+			%>
+			<div class="panel panel-default">
+				<div class="panel-body">
+					<a href="https://facebook.com/<%= post.from.id %>"><img src="https://graph.facebook.com/<%= post.from.id %>/picture" alt="" class="pull-left img-rounded" style="margin-right: 5px;"></a>
+
+					<p class="lead"><%-: post.message | linkify | nl2br %></p>
+
+					<%
+					if (post.comments && post.comments.data && post.comments.data.length) {
+						%>
+						<p></p>
+						<div class="comments" style="display: none; max-height: 400px; overflow: auto;">
+							<%
+							post.comments.data.forEach(function (comment) {
+								%>
+								<blockquote>
+									<p><%= comment.message %></p>
+									<small>
+										<span class="pull-right text-muted"><%= comment.created_time %></span>
+										<a href="https://facebook.com/<%= comment.from.id %>"><%= comment.from.name %></a>
+										&middot; <span class="glyphicon glyphicon-thumbs-up"></span> <%= comment.like_count %>
+									</small>
+								</blockquote>
+								<%
+							});
+							%>
+						</div>
+						<a href="#" class="btn-comments"><small>Show comments (<%= post.comments.data.length %>)</small></a>
+						<%
+					}
+					%>
+				</div>
+				<div class="panel-footer">
+					<a href="https://facebook.com/<%= post.id %>" class="pull-right text-muted"><%= post.created_time %></a>
+					<a href="https://facebook.com/<%= post.from.id %>"><strong><%= post.from.name %></strong></a>
+				</div>
+			</div>
+		<%
+		})
+		%>
+	</div>
+
+	<footer class="container">
+		<hr>
+		<small class="text-muted">
+			<span class="pull-right">Source code under the MIT licence</span>
+			<a href="https://github.com/emersion/unfacebookify">Unfacebookify</a> by <a href="http://emersion.fr">Emersion</a>
+		</small>
+	</footer>
+
+	<script src="/bower_components/jquery/dist/jquery.min.js"></script>
+	<script src="/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+	<script>
+	$('body').on('click', '.btn-comments', function (e) {
+		e.preventDefault();
+
+		$(this).slideUp();
+		$(this).parent().children('.comments').slideDown();
+	});
+	</script>
+</body>
+</html>
