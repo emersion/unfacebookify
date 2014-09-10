@@ -3,6 +3,7 @@ var graph = require('fbgraph');
 var ejs = require('ejs');
 var linkify = require('html-linkify');
 var conf = require('./config');
+var cache = require('./cache');
 
 var app = express();
 module.exports = app;
@@ -14,6 +15,60 @@ ejs.filters.nl2br = function (str) {
 	return String(str).replace('\n', '<br>');
 };
 app.engine('ejs', ejs.renderFile);
+
+function refreshCache(cb) {
+	cb = cb || function () {};
+
+	graph.get(conf.group+'/feed', function (err, fbRes) {
+		if (fbRes.error) {
+			if (fbRes.error.code == 104) {
+				graph.extendAccessToken({
+					"access_token": conf.access_token
+					, "client_id": conf.client_id
+					, "client_secret":conf.client_secret
+				}, function (err, fbRes) {
+					if (err) {
+						cb(err);
+						return;
+					}
+
+					console.log(fbRes); // TODO: extend access token before ttl
+					conf.access_token = fbRes.access_token;
+					graph.setAccessToken(conf.access_token);
+					refreshCache(cb); // Retry
+				});
+			} else {
+				cb(err);
+			}
+			return;
+		}
+
+		var cacheData = { feed: fbRes.data };
+		cache.write(cacheData, function (err) {
+			cb(err, cacheData);
+		});
+	});
+}
+
+var refreshTimeout = null;
+function autoRefresh() {
+	cache.nextRefresh(function (err, nextRefresh) {
+		if (err) {
+			return;
+		}
+
+		var now = (new Date()).getTime();
+		refreshTimeout = setTimeout(function () {
+			refreshCache(function (err) {
+				autoRefresh();
+			});
+		}, nextRefresh - now);
+	});
+}
+
+if (conf.cache.auto_update) {
+	autoRefresh();
+}
 
 app.get('/auth/facebook', function(req, res) {
 	var redirect_uri = 'http://'+req.headers.host+'/auth/facebook';
@@ -59,24 +114,15 @@ app.get('/', function(req, res) {
 		return;
 	}
 
-	graph.get(conf.group+'/feed', function(err, fbRes) {
-		if (fbRes.error) {
-			if (fbRes.error.code == 104) {
-				graph.extendAccessToken({
-					"access_token": conf.access_token
-					, "client_id": conf.client_id
-					, "client_secret":conf.client_secret
-				}, function (err, fbRes) {
-					conf.access_token = fbRes.access_token;
-					graph.setAccessToken(conf.access_token);
-					res.redirect('/');
-				});
-				return;
-			} else {
-				console.warn(fbRes.error);
-			}
-		}
+	cache.needsRefresh(function (err, needsRefresh) {
+		var cb = function (err, data) {
+			res.render('feed.ejs', { data: data.feed });
+		};
 
-		res.render('feed.ejs', fbRes);
+		if (needsRefresh) {
+			refreshCache(cb);
+		} else {
+			cache.read(cb);
+		}
 	});
 });

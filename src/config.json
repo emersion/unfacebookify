@@ -3,5 +3,10 @@
 	"client_secret": "",
 	"access_token": "",
 	"scope": "user_groups",
-	"group": ""
+	"group": "",
+	"cache": {
+		"min_update_interval": 60,
+		"update_interval": 900,
+		"auto_update": true
+	}
 }
