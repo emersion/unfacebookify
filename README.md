@@ -11,7 +11,7 @@ Unfacebookify displays for each post a box containing the message and the commen
 
 ## Features
 
-* Shows posts and comments with profile pictures, displays well links and e-mail adresses
+* Shows posts and comments with profile pictures, displays well links and e-mail addresses
 * Caching (maximum and minimum update frequency in config)
 * Multiple groups (access a group by typing `/{group_name}` in the URL)
 * Backed by sausages
