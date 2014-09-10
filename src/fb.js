@@ -16,36 +16,54 @@ ejs.filters.nl2br = function (str) {
 };
 app.engine('ejs', ejs.renderFile);
 
-function refreshCache(cb) {
+function refreshGroup(groupName, cb) {
 	cb = cb || function () {};
 
-	graph.get(conf.group+'/feed', function (err, fbRes) {
-		if (fbRes.error) {
-			if (fbRes.error.code == 104) {
-				graph.extendAccessToken({
-					"access_token": conf.access_token
-					, "client_id": conf.client_id
-					, "client_secret":conf.client_secret
-				}, function (err, fbRes) {
-					if (err) {
-						cb(err);
-						return;
-					}
+	var group = getGroup(groupName);
+	if (!group) {
+		process.nextTick(function () {
+			cb('Group not found');
+		});
+		return;
+	}
 
-					console.log(fbRes); // TODO: extend access token before ttl
-					conf.access_token = fbRes.access_token;
-					graph.setAccessToken(conf.access_token);
-					refreshCache(cb); // Retry
-				});
-			} else {
-				cb(err);
-			}
+	graph.setAccessToken(group.access_token);
+	graph.extendAccessToken({
+		access_token: conf.access_token,
+		client_id: conf.client_id,
+		client_secret: conf.client_secret
+	}, function (err, fbRes) {
+		if (fbRes.error) {
+			cb(err, fbRes);
 			return;
 		}
 
-		var cacheData = { feed: fbRes.data };
-		cache.write(cacheData, function (err) {
-			cb(err, cacheData);
+		group.access_token = fbRes.access_token;
+
+		graph.get(group.id+'/feed', function (err, fbRes) {
+			if (err) {
+				cb(err);
+				return;
+			}
+
+			cache.read(function (err, cacheData) {
+				if (err) {
+					cb(err, fbRes.data);
+					return;
+				}
+
+				if (!cacheData) {
+					cacheData = {};
+				}
+				if (!cacheData.groups) {
+					cacheData.groups = {};
+				}
+
+				cacheData.groups[group.id] = fbRes.data;
+				cache.write(cacheData, function (err) {
+					cb(err, fbRes.data);
+				});
+			});
 		});
 	});
 }
@@ -59,8 +77,15 @@ function autoRefresh() {
 
 		var now = (new Date()).getTime();
 		refreshTimeout = setTimeout(function () {
-			refreshCache(function (err) {
-				autoRefresh();
+			var remainingGroups = conf.groups.length;
+			conf.groups.forEach(function (group) {
+				refreshGroup(group.name, function (err) {
+					remainingGroups--;
+
+					if (remainingGroups == 0) {
+						autoRefresh();
+					}
+				});
 			});
 		}, nextRefresh - now);
 	});
@@ -70,26 +95,43 @@ if (conf.cache.auto_update) {
 	autoRefresh();
 }
 
-app.get('/auth/facebook', function(req, res) {
-	var redirect_uri = 'http://'+req.headers.host+'/auth/facebook';
+function getGroup(groupName) {
+	for (var i = 0; i < conf.groups.length; i++) {
+		var group = conf.groups[i];
 
-	if (conf.access_token) {
-		req.query.code = conf.access_token;
+		if (group.name == groupName) {
+			return group;
+		}
+	}
+}
+
+app.get('/:group/auth', function (req, res) {
+	var groupName = req.params.group;
+	var redirect_uri = req.protocol + '://' + req.get('host') + req.originalUrl;
+
+	var group = getGroup(groupName);
+	if (!group) {
+		res.status(400).send('Cannot find this group');
+		return;
+	}
+
+	if (group.access_token) {
+		req.query.code = group.access_token;
 	}
 
 	// we don't have a code yet
 	// so we'll redirect to the oauth dialog
 	if (!req.query.code) {
 		var authUrl = graph.getOauthUrl({
-			"client_id":     conf.client_id
-			, "redirect_uri":  redirect_uri
-			, "scope":         conf.scope
+			client_id: conf.client_id,
+			redirect_uri: redirect_uri,
+			scope: group.scope
 		});
 
-		if (!req.query.error) { //checks whether a user denied the app facebook login/permissions
+		if (!req.query.error) { // checks whether a user denied the app facebook login/permissions
 			res.redirect(authUrl);
-		} else {  //req.query.error == 'access_denied'
-			res.send('access denied');
+		} else { // req.query.error == 'access_denied'
+			res.status(403).send('access denied');
 		}
 		return;
 	}
@@ -97,32 +139,69 @@ app.get('/auth/facebook', function(req, res) {
 	// code is set
 	// we'll send that and get the access token
 	graph.authorize({
-		"client_id": conf.client_id
-		, "redirect_uri": redirect_uri
-		, "client_secret": conf.client_secret
-		, "code": req.query.code
+		client_id: conf.client_id,
+		redirect_uri: redirect_uri,
+		client_secret: conf.client_secret,
+		code: req.query.code
 	}, function (err, fbRes) {
 		console.log(fbRes);
-		conf.access_token = fbRes.access_token;
-		res.redirect('/');
+		group.access_token = fbRes.access_token;
+		res.redirect('/'+groupName);
 	});
 });
 
-app.get('/', function(req, res) {
-	if (!conf.access_token) {
-		res.redirect('/auth/facebook');
+function showGroup(groupName, res) {
+	// Get the group
+	var group = getGroup(groupName);
+	if (!group) {
+		res.status(400).send('Cannot find this group');
+		return;
+	}
+
+	// Check group access token
+	if (!group.access_token) {
+		res.redirect('/'+groupName+'/auth');
 		return;
 	}
 
 	cache.needsRefresh(function (err, needsRefresh) {
 		var cb = function (err, data) {
-			res.render('feed.ejs', { data: data.feed });
+			res.render('feed.ejs', { data: data });
 		};
 
 		if (needsRefresh) {
-			refreshCache(cb);
+			refreshGroup(groupName, cb);
 		} else {
-			cache.read(cb);
+			cache.read(function (err, cacheData) {
+				if (err) {
+					cb(err);
+					return;
+				}
+
+				if (!cacheData.groups || !cacheData.groups[group.id]) {
+					refreshGroup(groupName, cb);
+				} else {
+					cb(null, cacheData.groups[group.id]);
+				}
+			});
 		}
 	});
+}
+
+app.get('/:group', function (req, res) {
+	showGroup(req.params.group, res);
+});
+
+app.get('/', function (req, res) {
+	for (var i = 0; i < conf.groups.length; i++) {
+		var group = conf.groups[i];
+
+		if (group.default) {
+			showGroup(group.name, res);
+			return;
+		}
+	}
+
+	// No group found
+	res.status(400).send('No group specified :-( cannot send sausage');
 });

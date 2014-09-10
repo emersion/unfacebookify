@@ -1,9 +1,15 @@
 {
 	"client_id": "",
 	"client_secret": "",
-	"access_token": "",
-	"scope": "user_groups",
-	"group": "",
+	"groups": [
+		{
+			"id": "",
+			"name": "",
+			"access_token": "",
+			"scope": "user_groups",
+			"default": true
+		}
+	],
 	"cache": {
 		"min_update_interval": 60,
 		"update_interval": 900,
