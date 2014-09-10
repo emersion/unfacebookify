@@ -1,7 +1,13 @@
 unfacebookify
 =============
 
-Allow unregistered Facebook users to access a group's posts
+Allow unregistered Facebook users to access a group's posts.
+
+## How it looks like
+
+Unfacebookify displays for each post a box containing the message and the comments.
+
+![147_selection](https://cloud.githubusercontent.com/assets/506932/4220089/e9939bb0-38fe-11e4-86ab-74a3d26ebf11.png)
 
 ## Installation
 
