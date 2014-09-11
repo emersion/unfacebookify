@@ -1,18 +1,12 @@
 {
 	"client_id": "",
 	"client_secret": "",
-	"groups": [
-		{
-			"id": "",
-			"name": "",
-			"access_token": "",
-			"scope": "user_groups",
-			"default": true
-		}
-	],
+	"scope": "user_groups",
+	"groups": [],
 	"cache": {
 		"min_update_interval": 60,
 		"update_interval": 900,
 		"auto_update": true
-	}
+	},
+	"allow_add": true
 }
