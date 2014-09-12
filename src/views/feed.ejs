@@ -5,24 +5,22 @@
 	Unfacebookify
 </h1>
 
-<%
-data.forEach(function (post) {
-	%>
-	<div class="panel panel-default">
+<% data.forEach(function (post) { %>
+	<div id="post-<%= post.id %>" class="panel panel-default">
 		<div class="panel-body">
 			<a href="https://facebook.com/<%= post.from.id %>"><img src="https://graph.facebook.com/<%= post.from.id %>/picture" alt="" class="pull-left img-rounded" style="margin-right: 5px;"></a>
 
 			<p class="lead"><%-: post.message | linkify | nl2br %></p>
 
-			<%
-			if (post.comments && post.comments.data && post.comments.data.length) {
-				%>
+			<% if (post.picture) { %>
+				<img src="<%= post.picture %>" alt="Picture" class="img-thumbnail">
+			<% } %>
+
+			<% if (post.comments && post.comments.data && post.comments.data.length) { %>
 				<p></p>
 				<span class="clearfix"></span>
 				<div class="comments" style="display: none; max-height: 400px; overflow: auto;">
-					<%
-					post.comments.data.forEach(function (comment) {
-						%>
+					<% post.comments.data.forEach(function (comment) { %>
 						<blockquote>
 							<p><%= comment.message %></p>
 							<small>
@@ -31,23 +29,17 @@ data.forEach(function (post) {
 								&middot; <span class="glyphicon glyphicon-thumbs-up"></span> <%= comment.like_count %>
 							</small>
 						</blockquote>
-						<%
-					});
-					%>
+					<% }); %>
 				</div>
 				<a href="#" class="btn-comments"><small>Show comments (<%= post.comments.data.length %>)</small></a>
-				<%
-			}
-			%>
+			<% } %>
 		</div>
 		<div class="panel-footer">
 			<a href="https://facebook.com/<%= post.id %>" class="pull-right text-muted"><%= post.created_time %></a>
 			<a href="https://facebook.com/<%= post.from.id %>"><strong><%= post.from.name %></strong></a>
 		</div>
 	</div>
-<%
-})
-%>
+<% }) %>
 
 <script>
 $(function () {

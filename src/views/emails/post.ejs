@@ -1,0 +1,9 @@
+<%- post.message %>
+
+---
+<% if (host) { %>
+Reply to this email directly or view it on Unfacebookify:
+<%- host+'/'+group.name+'#post-'+post.id %>
+<% } else { %>
+You can reply to this email directly.
+<% } %>

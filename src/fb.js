@@ -2,9 +2,10 @@ var express = require('express');
 var graph = require('fbgraph');
 var ejs = require('ejs');
 var linkify = require('html-linkify');
-var conf = require('./config');
+var config = require('./config');
 var cache = require('./cache');
-var writeConfig = require('./config-writer');
+var writeconfig = require('./config-writer');
+var notify = require('./notifier');
 
 var app = express();
 module.exports = app;
@@ -30,9 +31,9 @@ function refreshGroup(groupName, cb) {
 
 	graph.setAccessToken(group.access_token);
 	graph.extendAccessToken({
-		access_token: conf.access_token,
-		client_id: conf.client_id,
-		client_secret: conf.client_secret
+		access_token: config.access_token,
+		client_id: config.client_id,
+		client_secret: config.client_secret
 	}, function (err, fbRes) {
 		if (fbRes.error) {
 			cb(err, fbRes);
@@ -60,10 +61,44 @@ function refreshGroup(groupName, cb) {
 					cacheData.groups = {};
 				}
 
+				// Check for new posts if the cache is not empty
+				if (cacheData.groups[group.id]) {
+					var groupData = cacheData.groups[group.id];
+					var newPosts = [];
+
+					for (var i = 0; i < fbRes.data.length; i++) {
+						var freshPost = fbRes.data[i];
+
+						var isOld = false;
+						for (var j = 0; j < groupData.length; j++) {
+							var cachedPost = groupData[j];
+
+							if (cachedPost.id == freshPost.id) {
+								isOld = true;
+								break;
+							}
+						}
+
+						if (!isOld) {
+							newPosts.push(freshPost);
+						}
+					}
+
+					if (newPosts.length > 0) {
+						newPosts.forEach(function (post) {
+							notify({
+								post: post,
+								group: group
+							});
+						});
+					}
+				}
+
 				cacheData.groups[group.id] = fbRes.data;
 				cache.write(cacheData, function (err) {
 					cb(err, fbRes.data);
 				});
+				cb(null, fbRes.data);
 			});
 		});
 	});
@@ -78,8 +113,8 @@ function autoRefresh() {
 
 		var now = (new Date()).getTime();
 		refreshTimeout = setTimeout(function () {
-			var remainingGroups = conf.groups.length;
-			conf.groups.forEach(function (group) {
+			var remainingGroups = config.groups.length;
+			config.groups.forEach(function (group) {
 				refreshGroup(group.name, function (err) {
 					remainingGroups--;
 
@@ -92,7 +127,7 @@ function autoRefresh() {
 	});
 }
 
-if (conf.cache.auto_update) {
+if (config.cache.auto_refresh) {
 	autoRefresh();
 }
 
@@ -101,8 +136,8 @@ function getReqUrl(req) {
 }
 
 function getGroup(groupName) {
-	for (var i = 0; i < conf.groups.length; i++) {
-		var group = conf.groups[i];
+	for (var i = 0; i < config.groups.length; i++) {
+		var group = config.groups[i];
 
 		if (group.name == groupName) {
 			return group;
@@ -150,7 +185,7 @@ function showGroup(groupName, res) {
 
 function authWithFacebook(res, options) {
 	var authUrl = graph.getOauthUrl({
-		client_id: conf.client_id,
+		client_id: config.client_id,
 		redirect_uri: options.redirect_uri,
 		scope: options.scope
 	});
@@ -160,9 +195,9 @@ function authWithFacebook(res, options) {
 
 function authorizeFacebook(options, cb) {
 	graph.authorize({
-		client_id: conf.client_id,
+		client_id: config.client_id,
 		redirect_uri: options.redirect_uri,
-		client_secret: conf.client_secret,
+		client_secret: config.client_secret,
 		code: options.code
 	}, cb);
 }
@@ -174,7 +209,7 @@ app.get('/auth', function (req, res) {
 		if (!req.query.error) { // checks whether a user denied the app facebook login/permissions
 			authWithFacebook(res, {
 				redirect_uri: redirect_uri,
-				scope: conf.scope
+				scope: config.scope
 			});
 		} else { // req.query.error == 'access_denied'
 			res.status(403).send('access denied');
@@ -195,7 +230,7 @@ app.get('/auth', function (req, res) {
 });
 
 app.all('/new', function (req, res, next) {
-	if (!conf.allow_add) { // Make sure the user is allowed to add new groups
+	if (!config.allow_add) { // Make sure the user is allowed to add new groups
 		res.status(403).send('Access denied');
 		return;
 	}
@@ -243,7 +278,7 @@ app.post('/new', function (req, res) {
 		id: req.body.id,
 		name: req.body.name.replace(/\s+/g, '_'),
 		access_token: req.body.access_token,
-		scope: conf.scope
+		scope: config.scope
 	};
 
 	if (getGroup(group.name)) {
@@ -251,9 +286,9 @@ app.post('/new', function (req, res) {
 		return;
 	}
 
-	conf.groups.push(group);
+	config.groups.push(group);
 
-	writeConfig(conf, function (err) {
+	writeconfig(config, function (err) {
 		if (err) {
 			res.status(500).send(err);
 		} else {
@@ -305,13 +340,13 @@ app.get('/:group/auth', function (req, res) {
 			res.redirect('/'+groupName);
 		}
 
-		writeConfig(conf);
+		writeconfig(config);
 	});
 });
 
 app.get('/', function (req, res) {
-	for (var i = 0; i < conf.groups.length; i++) {
-		var group = conf.groups[i];
+	for (var i = 0; i < config.groups.length; i++) {
+		var group = config.groups[i];
 
 		if (group.default) {
 			showGroup(group.name, res);
@@ -319,7 +354,7 @@ app.get('/', function (req, res) {
 		}
 	}
 
-	if (conf.allow_add) {
+	if (config.allow_add) {
 		res.redirect('/new');
 		return;
 	}
