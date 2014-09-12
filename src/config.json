@@ -6,7 +6,21 @@
 	"cache": {
 		"min_update_interval": 60,
 		"update_interval": 900,
-		"auto_update": true
+		"auto_update": false
+	},
+	"notify": {
+		"enabled": false,
+		"from": "bot+unfacebookify@example.org",
+		"subject": "[<%= group.title %>] New post from <%= post.from.name %>",
+		"transport": {
+			"host": "mail.example.org",
+			"port": "25",
+			"secure": true,
+			"auth": {
+				"user": "bot@example.org",
+				"pass": "42"
+			}
+		}
 	},
 	"allow_add": true
 }
