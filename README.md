@@ -17,6 +17,7 @@ Unfacebookify displays for each post a box containing the message and the commen
 * Caching (maximum and minimum update frequency in config)
 * Multiple groups (access a group by typing `/{group_name}` in the URL)
 * Option to let everyone unfacebookify any group by logging in with their Facebook account
+* E-mail notifications
 * Backed by sausages
 
 ## Installation
