@@ -63,7 +63,7 @@ All configuration is stored in `src/config.json`.
 		}
 	},
 	"allow_add": true, // Allow everyone to add their own groups
-	"host": "http://bpmpsia.emersion.fr" // The server URL - will be used in emails (optional)
+	"host": "http://example.org" // The server URL - will be used in emails (optional)
 }
 ```
 
