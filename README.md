@@ -28,6 +28,54 @@ Edit `src/config.json` and add your app's API key and secret in `client_id` and 
 
 Then run `node src/index.js` to run  the server.
 
-You will have first to login with your own Facebook account, authorize your app and then your access token will be stored in the RAM. To make it persistent, read the server logs and fill in `access_token` in the config file.
+You will have first to login with your own Facebook account, authorize your app and then your access token will be stored in the config file.
 
 The page should now display the group's messages and comments.
+
+## Configuration
+
+All configuration is stored in `src/config.json`.
+
+```js
+{
+	"client_id": "", // Your app id
+	"client_secret": "", // Your app secret
+	"scope": "user_groups", // Default scope for new groups
+	"groups": [], // List of registered groups
+	"cache": { // Cache config
+		"min_update_interval": 60, // Minimum interval of time between two updates from Facebook (in seconds)
+		"update_interval": 900, // Interval of time between two auto updates from Facebook (in seconds)
+		"auto_update": false // Auto-update the cache each update_interval seconds
+	},
+	"notify": { // Notify some users for new posts
+		"enabled": false, // Enable notifications
+		"from": "bot+unfacebookify@example.org", // From header
+		"subject": "[<%= group.title %>] New post from <%= post.from.name %>", // E-mail subject
+		"transport": { // Transport - see Nodemailer options
+			// Example with SMTP - see https://github.com/andris9/nodemailer-smtp-transport#usage
+			"host": "mail.example.org",
+			"port": "25",
+			"secure": true,
+			"auth": {
+				"user": "bot@example.org",
+				"pass": "42"
+			}
+		}
+	},
+	"allow_add": true, // Allow everyone to add their own groups
+	"host": "http://bpmpsia.emersion.fr" // The server URL - will be used in emails (optional)
+}
+```
+
+The `groups` field contains a list of registered groups. Each group has the following syntax:
+```js
+{
+  "id": "", // The Facebook group id
+  "name": "", // A unique identifier for this group - will appear in the URL
+  "title": "", // The group title
+  "access_token": "", // The access token which will be used to update the grouyp feed
+  "scope": "", // The Facebook scope for this group
+  "default": false, // If set to true, the main page will display this group's feed (optional)
+  "notify": ["contact@example.org"] // E-mail addresses which will receive e-mail notifications from this group (optional)
+}
+```
