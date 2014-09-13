@@ -277,6 +277,7 @@ app.post('/new', function (req, res) {
 	var group = {
 		id: req.body.id,
 		name: req.body.name.replace(/\s+/g, '_'),
+		title: req.body.title || req.body.name,
 		access_token: req.body.access_token,
 		scope: config.scope
 	};
