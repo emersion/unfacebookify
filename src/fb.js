@@ -19,6 +19,27 @@ ejs.filters.nl2br = function (str) {
 };
 app.engine('ejs', ejs.renderFile);
 
+function fetchObjects(data, cb) {
+	var remainingPosts = data.length;
+	function finished() {
+		remainingPosts--;
+		if (remainingPosts == 0) {
+			cb(null, data);
+		}
+	}
+
+	data.forEach(function (post) {
+		if (post.object_id && !post.object) {
+			graph.get(post.object_id, function (err, res) {
+				post.object = res;
+				finished();
+			});
+		} else {
+			finished();
+		}
+	});
+}
+
 function refreshGroup(groupName, cb) {
 	cb = cb || function () {};
 
@@ -49,9 +70,11 @@ function refreshGroup(groupName, cb) {
 				return;
 			}
 
+			var data = fbRes.data;
+
 			cache.read(function (err, cacheData) {
 				if (err) {
-					cb(err, fbRes.data);
+					cb(err, data);
 					return;
 				}
 
@@ -63,12 +86,12 @@ function refreshGroup(groupName, cb) {
 				}
 
 				// Check for new posts if the cache is not empty
+				var newPosts = [];
 				if (cacheData.groups[group.id]) {
 					var groupData = cacheData.groups[group.id];
-					var newPosts = [];
 
-					for (var i = 0; i < fbRes.data.length; i++) {
-						var freshPost = fbRes.data[i];
+					for (var i = 0; i < data.length; i++) {
+						var freshPost = data[i];
 
 						var isOld = false;
 						for (var j = 0; j < groupData.length; j++) {
@@ -82,7 +105,17 @@ function refreshGroup(groupName, cb) {
 
 						if (!isOld) {
 							newPosts.push(freshPost);
+						} else {
+							// Try to populate object from cache
+							data[i].object = cachedPost.object;
 						}
+					}
+				}
+
+				fetchObjects(data, function (err, data) {
+					if (err) {
+						cb(err, data);
+						return;
 					}
 
 					if (newPosts.length > 0) {
@@ -93,13 +126,12 @@ function refreshGroup(groupName, cb) {
 							});
 						});
 					}
-				}
 
-				cacheData.groups[group.id] = fbRes.data;
-				cache.write(cacheData, function (err) {
-					cb(err, fbRes.data);
+					cacheData.groups[group.id] = data;
+					cache.write(cacheData, function (err) {
+						cb(err, data);
+					});
 				});
-				cb(null, fbRes.data);
 			});
 		});
 	});

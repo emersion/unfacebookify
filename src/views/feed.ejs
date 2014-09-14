@@ -17,7 +17,17 @@
 
 			<p class="lead"><%-: post.message | linkify | nl2br %></p>
 
-			<% if (post.picture) { %>
+			<% if (post.object) {
+				if (post.object.picture) { %>
+					<div class="row">
+						<div class="col-xs-12 col-md-6">
+							<a href="<%= post.object.source %>" target="_blank" class="thumbnail">
+								<img src="<%= post.object.source %>" alt="Picture">
+							</a>
+						</div>
+					</div>
+				<% }
+			} else if (post.picture) { %>
 				<img src="<%= post.picture %>" alt="Picture" class="img-thumbnail">
 			<% } %>
 
