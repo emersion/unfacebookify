@@ -6,6 +6,7 @@ var config = require('./config');
 var cache = require('./cache');
 var writeconfig = require('./config-writer');
 var notify = require('./notifier');
+var watch = require('./watcher');
 
 var app = express();
 module.exports = app;
@@ -104,10 +105,49 @@ function refreshGroup(groupName, cb) {
 	});
 }
 
+function postMessage(group, msg, cb) {
+	cb = cb || function () {};
+
+	var content = 'From '+msg.from.name+' <'+msg.from.address+'>\n'+msg.content;
+	var endpoint = (msg.post) ? msg.post+'/comments' : group.id+'/feed';
+
+	graph.setAccessToken(group.access_token);
+	graph.post(endpoint, {
+		message: content
+	}, cb);
+}
+
+function watchNewPosts() {
+	watch(function (err, messages) {
+		if (err) {
+			console.log(err);
+			return;
+		}
+
+		messages.forEach(function (msg) {
+			// Get group
+			var groupAttrName = (msg.group.id) ? 'id' : 'title';
+			var group = getGroup(msg.group[groupAttrName], groupAttrName);
+
+			// Post message
+			postMessage(group, {
+				from: msg.from,
+				content: msg.content,
+				post: msg.post.id
+			}, function (err) {
+				if (err) {
+					console.log(err);
+				}
+			});
+		});
+	});
+}
+
 var refreshTimeout = null;
 function autoRefresh() {
 	cache.nextRefresh(function (err, nextRefresh) {
 		if (err) {
+			console.log(err);
 			return;
 		}
 
@@ -118,7 +158,8 @@ function autoRefresh() {
 				refreshGroup(group.name, function (err) {
 					remainingGroups--;
 
-					if (remainingGroups == 0) {
+					if (remainingGroups == 0) { // Finished
+						watchNewPosts();
 						autoRefresh();
 					}
 				});
@@ -135,11 +176,13 @@ function getReqUrl(req) {
 	return req.protocol + '://' + req.get('host') + req.originalUrl;
 }
 
-function getGroup(groupName) {
+function getGroup(attrValue, attrName) {
+	attrName = attrName || 'name';
+
 	for (var i = 0; i < config.groups.length; i++) {
 		var group = config.groups[i];
 
-		if (group.name == groupName) {
+		if (group[attrName] == attrValue) {
 			return group;
 		}
 	}
@@ -161,11 +204,19 @@ function showGroup(groupName, res) {
 
 	cache.needsRefresh(function (err, needsRefresh) {
 		var cb = function (err, data) {
-			res.render('feed.ejs', { data: data });
+			res.render('feed.ejs', {
+				data: data,
+				postByEmail: {
+					enabled: config.watch.enabled,
+					address: config.notify.from,
+					subject: '['+group.title+']'
+				}
+			});
 		};
 
 		if (needsRefresh) {
 			refreshGroup(groupName, cb);
+			watchNewPosts();
 		} else {
 			cache.read(function (err, cacheData) {
 				if (err) {

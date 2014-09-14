@@ -1,7 +1,12 @@
 <% include partials/head %>
 
 <h1>
-	<a href="" class="btn btn-default btn-lg pull-right">Refresh</a>
+	<span class="pull-right">
+		<% if (postByEmail.enabled) { %>
+			<button class="btn btn-lg btn-primary" id="post-btn">Post a message</button>
+		<% } %>
+		<a href="" class="btn btn-default btn-lg">Refresh</a>
+	</span>
 	Unfacebookify
 </h1>
 
@@ -48,6 +53,13 @@ $(function () {
 
 		$(this).slideUp();
 		$(this).parent().children('.comments').slideDown();
+	});
+
+	$('#post-btn').popover({
+		content: 'To post a new message in this group, write an e-mail to <a href="mailto:<%= postByEmail.address %>?subject=<%= postByEmail.subject %>"><%= postByEmail.address %></a> with <em><%= postByEmail.subject %></em> in the subject.',
+		html: true,
+		placement: 'bottom',
+		container: 'body'
 	});
 });
 </script>
