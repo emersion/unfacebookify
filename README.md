@@ -18,6 +18,7 @@ Unfacebookify displays for each post a box containing the message and the commen
 * Multiple groups (access a group by typing `/{group_name}` in the URL)
 * Option to let everyone unfacebookify any group by logging in with their Facebook account
 * E-mail notifications
+* Allow users to post to a Facebook group by e-mail
 * Backed by sausages
 
 ## Installation
