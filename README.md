@@ -62,6 +62,17 @@ All configuration is stored in `src/config.json`.
 			}
 		}
 	},
+	"watch": { // Watch an e-mail inbox for messages to post
+		"enabled": false, // Allow users to post messages in a Facebook group by e-mail
+		"transport": { // Transport - see node-imap options
+			// See https://github.com/mscdex/node-imap#connection-instance-methods
+			"user": "bot@example.org",
+			"password": "42",
+			"host": "mail.example.org",
+			"port": 993,
+			"tls": true
+		}
+	},
 	"allow_add": true, // Allow everyone to add their own groups
 	"host": "http://example.org" // The server URL - will be used in emails (optional)
 }
