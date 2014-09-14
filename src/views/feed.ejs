@@ -1,3 +1,26 @@
+<%
+function displayAttachment(attachment) {
+	if (attachment.subattachments && attachment.subattachments.data) {
+		displayAttachmentsList(attachment.subattachments.data);
+	}
+
+	if (attachment.type == 'photo') {
+		%>
+		<div class="col-xs-6 col-md-4">
+			<a href="<%= attachment.media.image.src %>" target="_blank" class="thumbnail">
+				<img src="<%= attachment.media.image.src %>" alt="Picture">
+			</a>
+		</div>
+		<%
+	}
+}
+function displayAttachmentsList(attachments) {
+	attachments.forEach(function (attachment) {
+		displayAttachment(attachment);
+	});
+}
+%>
+
 <% include partials/head %>
 
 <h1>
@@ -17,16 +40,14 @@
 
 			<p class="lead"><%-: post.message | linkify | nl2br %></p>
 
-			<% if (post.object) {
-				if (post.object.picture) { %>
-					<div class="row">
-						<div class="col-xs-12 col-md-6">
-							<a href="<%= post.object.source %>" target="_blank" class="thumbnail">
-								<img src="<%= post.object.source %>" alt="Picture">
-							</a>
-						</div>
-					</div>
-				<% }
+			<% if (post.attachments) {
+				%>
+				<div class="row">
+					<%
+					displayAttachmentsList(post.attachments.data);
+					%>
+				</div>
+				<%
 			} else if (post.picture) { %>
 				<img src="<%= post.picture %>" alt="Picture" class="img-thumbnail">
 			<% } %>
@@ -38,6 +59,13 @@
 					<% post.comments.data.forEach(function (comment) { %>
 						<blockquote>
 							<p><%= comment.message %></p>
+							<% if (comment.attachment) { %>
+								<div class="row">
+									<%
+									displayAttachment(comment.attachment);
+									%>
+								</div>
+							<% } %>
 							<small>
 								<span class="pull-right text-muted"><%= comment.created_time %></span>
 								<a href="https://facebook.com/<%= comment.from.id %>"><%= comment.from.name %></a>

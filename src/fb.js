@@ -19,27 +19,6 @@ ejs.filters.nl2br = function (str) {
 };
 app.engine('ejs', ejs.renderFile);
 
-function fetchObjects(data, cb) {
-	var remainingPosts = data.length;
-	function finished() {
-		remainingPosts--;
-		if (remainingPosts == 0) {
-			cb(null, data);
-		}
-	}
-
-	data.forEach(function (post) {
-		if (post.object_id && !post.object) {
-			graph.get(post.object_id, function (err, res) {
-				post.object = res;
-				finished();
-			});
-		} else {
-			finished();
-		}
-	});
-}
-
 function refreshGroup(groupName, cb) {
 	cb = cb || function () {};
 
@@ -64,7 +43,8 @@ function refreshGroup(groupName, cb) {
 
 		group.access_token = fbRes.access_token;
 
-		graph.get(group.id+'/feed', function (err, fbRes) {
+		var fields = 'id,from,message,created_time,attachments,comments{from,message,created_time,like_count,attachment}';
+		graph.get(group.id+'/feed?fields='+fields, function (err, fbRes) {
 			if (err) {
 				cb(err);
 				return;
@@ -86,8 +66,8 @@ function refreshGroup(groupName, cb) {
 				}
 
 				// Check for new posts if the cache is not empty
-				var newPosts = [];
 				if (cacheData.groups[group.id]) {
+					var newPosts = [];
 					var groupData = cacheData.groups[group.id];
 
 					for (var i = 0; i < data.length; i++) {
@@ -110,13 +90,6 @@ function refreshGroup(groupName, cb) {
 							data[i].object = cachedPost.object;
 						}
 					}
-				}
-
-				fetchObjects(data, function (err, data) {
-					if (err) {
-						cb(err, data);
-						return;
-					}
 
 					if (newPosts.length > 0) {
 						newPosts.forEach(function (post) {
@@ -126,11 +99,11 @@ function refreshGroup(groupName, cb) {
 							});
 						});
 					}
+				}
 
-					cacheData.groups[group.id] = data;
-					cache.write(cacheData, function (err) {
-						cb(err, data);
-					});
+				cacheData.groups[group.id] = data;
+				cache.write(cacheData, function (err) {
+					cb(err, data);
 				});
 			});
 		});
@@ -139,6 +112,14 @@ function refreshGroup(groupName, cb) {
 
 function postMessage(group, msg, cb) {
 	cb = cb || function () {};
+
+	// Allow incoming messages from users in notify list only
+	if (!(group.notify instanceof Array) || !~group.notify.indexOf(msg.from.address)) {
+		process.nextTick(function () {
+			cb('The e-mail address "'+msg.from.address+'" is not in the notify list for the group "'+group.name+'"');
+		});
+		return;
+	}
 
 	var content = 'From '+msg.from.name+' <'+msg.from.address+'>\n'+msg.content;
 	var endpoint = (msg.post) ? msg.post+'/comments' : group.id+'/feed';
@@ -168,7 +149,8 @@ function watchNewPosts() {
 				post: msg.post.id
 			}, function (err) {
 				if (err) {
-					console.log(err);
+					console.log('Cannot post message from e-mail', err);
+					return;
 				}
 			});
 		});
