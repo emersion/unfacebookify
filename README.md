@@ -19,7 +19,7 @@ Unfacebookify displays for each post a box containing the message and the commen
 * Option to let everyone unfacebookify any group by logging in with their Facebook account
 * E-mail notifications
 * Allow users to post to a Facebook group by e-mail
-* Per-group custom Facebook apps
+* [Per-group custom Facebook apps](https://github.com/emersion/unfacebookify/wiki/Use-a-custom-Facebook-app)
 * Backed by sausages
 
 ## Installation
