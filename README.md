@@ -3,7 +3,7 @@ unfacebookify
 
 Allow unregistered Facebook users to access a group's posts.
 
-**Live demo: http://unfacebookify.herokuapp.com/**
+**Live demo: http://unfacebookify.emersion.fr**
 
 ## How it looks like
 
