@@ -13,6 +13,13 @@ function displayAttachment(attachment) {
 		</div>
 		<%
 	}
+	/*if (attachment.type == 'unavailable') {
+		%>
+		<div class="col-xs-12 text-center">
+			<p class="text-muted"><strong><%= attachment.title %></strong><br><%= attachment.description %></p>
+		</div>
+		<%
+	}*/
 }
 function displayAttachmentsList(attachments) {
 	attachments.forEach(function (attachment) {

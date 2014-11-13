@@ -33,8 +33,8 @@ function refreshGroup(groupName, cb) {
 	graph.setAccessToken(group.access_token);
 	graph.extendAccessToken({
 		access_token: config.access_token,
-		client_id: config.client_id,
-		client_secret: config.client_secret
+		client_id: group.client_id || config.client_id,
+		client_secret: group.client_secret || config.client_secret
 	}, function (err, fbRes) {
 		if (fbRes.error) {
 			cb(err, fbRes);
@@ -218,6 +218,12 @@ function showGroup(groupName, res) {
 
 	cache.needsRefresh(function (err, needsRefresh) {
 		var cb = function (err, data) {
+			if (err) {
+				console.error(err);
+				res.status(500).send('Could not retrieve this group data: '+err.message);
+				return;
+			}
+
 			res.render('feed.ejs', {
 				data: data,
 				postByEmail: {
@@ -250,7 +256,7 @@ function showGroup(groupName, res) {
 
 function authWithFacebook(res, options) {
 	var authUrl = graph.getOauthUrl({
-		client_id: config.client_id,
+		client_id: options.client_id || config.client_id,
 		redirect_uri: options.redirect_uri,
 		scope: options.scope
 	});
@@ -260,9 +266,9 @@ function authWithFacebook(res, options) {
 
 function authorizeFacebook(options, cb) {
 	graph.authorize({
-		client_id: config.client_id,
+		client_id: options.client_id || config.client_id,
+		client_secret: options.client_secret || config.client_secret,
 		redirect_uri: options.redirect_uri,
-		client_secret: config.client_secret,
 		code: options.code
 	}, cb);
 }
@@ -274,7 +280,8 @@ app.get('/auth', function (req, res) {
 		if (!req.query.error) { // checks whether a user denied the app facebook login/permissions
 			authWithFacebook(res, {
 				redirect_uri: redirect_uri,
-				scope: config.scope
+				scope: config.scope,
+				client_id: req.query.client_id
 			});
 		} else { // req.query.error == 'access_denied'
 			res.status(403).send('access denied');
@@ -286,11 +293,21 @@ app.get('/auth', function (req, res) {
 	// we'll send that and get the access token
 	authorizeFacebook({
 		redirect_uri: redirect_uri,
-		code: req.query.code
+		code: req.query.code,
+		client_id: req.query.client_id,
+		client_secret: req.query.client_secret
 	}, function (err, fbRes) {
 		console.log(fbRes);
+		if (err) {
+			res.status(401).send('Could not authorize Facebook: '+err.message);
+			return;
+		}
 
-		res.redirect('/new?access_token='+fbRes.access_token);
+		var redirectPath = '/new?access_token='+fbRes.access_token;
+		if (req.query.client_id) {
+			redirectPath += '&client_id='+req.query.client_id+'&client_secret='+req.query.client_secret;
+		}
+		res.redirect(redirectPath);
 	});
 });
 
@@ -315,6 +332,8 @@ app.get('/new', function (req, res) {
 
 	if (view.authenticated) {
 		view.access_token = req.query.access_token;
+		view.client_id = req.query.client_id || '';
+		view.client_secret = req.query.client_secret || '';
 
 		graph.setAccessToken(view.access_token);
 		graph.get('/me/groups', function (err, fbRes) {
@@ -346,6 +365,10 @@ app.post('/new', function (req, res) {
 		access_token: req.body.access_token,
 		scope: config.scope
 	};
+	if (req.body.client_id) {
+		group.client_id = req.body.client_id;
+		group.client_secret = req.body.client_secret;
+	}
 
 	if (getGroup(group.name)) {
 		res.status(400).send('This group name already exist');
@@ -383,7 +406,8 @@ app.get('/:group/auth', function (req, res) {
 		if (!req.query.error) { // checks whether a user denied the app facebook login/permissions
 			authWithFacebook(res, {
 				redirect_uri: redirect_uri,
-				scope: group.scope
+				scope: group.scope,
+				client_id: group.client_id
 			});
 		} else { // req.query.error == 'access_denied'
 			res.status(403).send('access denied');
@@ -395,7 +419,9 @@ app.get('/:group/auth', function (req, res) {
 	// we'll send that and get the access token
 	authorizeFacebook({
 		redirect_uri: redirect_uri,
-		code: req.query.code
+		code: req.query.code,
+		client_id: group.client_id,
+		client_secret: group.client_secret
 	}, function (err, fbRes) {
 		console.log(fbRes);
 		group.access_token = fbRes.access_token;
