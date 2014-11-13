@@ -187,7 +187,7 @@ if (config.cache.auto_refresh) {
 }
 
 function getReqUrl(req) {
-	return req.protocol + '://' + req.get('host') + req.originalUrl;
+	return req.protocol + '://' + (config.host || req.get('host')) + req.originalUrl;
 }
 
 function getGroup(attrValue, attrName) {
