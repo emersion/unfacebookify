@@ -88,6 +88,8 @@ The `groups` field contains a list of registered groups. Each group has the foll
   "access_token": "", // The access token which will be used to update the grouyp feed
   "scope": "", // The Facebook scope for this group
   "default": false, // If set to true, the main page will display this group's feed (optional)
-  "notify": ["contact@example.org"] // E-mail addresses which will receive e-mail notifications from this group (optional)
+  "notify": ["contact@example.org"], // E-mail addresses which will receive e-mail notifications from this group (optional)
+  "client_id": "", // Override the app ID for this group (optional)
+  "client_secret": "" // Override the app secret for this group (optional)
 }
 ```
