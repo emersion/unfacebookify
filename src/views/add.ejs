@@ -13,10 +13,37 @@
 <% if (!authenticated) { %>
 	<p class="lead">Login with your Facebook account, choose a group to unfacebookify and a new page with your group's posts will be created!</p>
 
-	<p class="text-center"><a href="/auth" class="btn btn-primary btn-lg">Login with Facebook</a></p>
+	<form action="/auth" method="get" class="form-horizontal">
+		<div id="custom-app" class="collapse out">
+			<p>Due to Facebook limitations, if you're not the owner of this Unfacebookify installation you'll have to use your own Facebook app. Please <a href="https://github.com/emersion/unfacebookify/wiki/Use-a-custom-Facebook-app" target="_blank">read this guide</a> if you don't know how to do this.</p>
+
+			<div class="form-group">
+				<label for="client_id" class="col-sm-2 control-label">App ID</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="client_id" name="client_id" placeholder="App ID">
+				</div>
+			</div>
+
+			<div class="form-group">
+				<label for="client_secret" class="col-sm-2 control-label">App secret</label>
+				<div class="col-sm-10">
+					<input type="text" class="form-control" id="client_secret" name="client_secret" placeholder="App secret">
+				</div>
+			</div>
+		</div>
+
+		<p class="text-center">
+			<button type="submit" class="btn btn-primary btn-lg">Login with Facebook</button><br>
+			<button type="button" class="btn btn-link" data-toggle="collapse" data-target="#custom-app">
+				Use a custom Facebook app
+			</button>
+		</p>
+	</form>
 <% } else { %>
 	<form action="" method="post" class="form-horizontal">
 		<input type="hidden" name="access_token" value="<%= access_token %>">
+		<input type="hidden" name="client_id" value="<%= client_id %>">
+		<input type="hidden" name="client_secret" value="<%= client_secret %>">
 
 		<div class="form-group">
 			<label for="id" class="col-sm-2 control-label">Group</label>
