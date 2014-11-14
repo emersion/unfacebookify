@@ -4,7 +4,7 @@
 	<meta charset="UTF-8">
 	<title>Unfacebookify</title>
 
-	<% if (layout && layout.atom) { %>
+	<% if (typeof layout != 'undefined' && layout.atom) { %>
 	<link href="<%= layout.atom %>" type="application/atom+xml" rel="alternate" title="ATOM feed" />
 	<% } %>
 
