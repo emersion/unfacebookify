@@ -4,6 +4,10 @@
 	<meta charset="UTF-8">
 	<title>Unfacebookify</title>
 
+	<% if (layout && layout.atom) { %>
+	<link href="<%= layout.atom %>" type="application/atom+xml" rel="alternate" title="ATOM feed" />
+	<% } %>
+
 	<link rel="stylesheet" href="/bower_components/bootstrap/dist/css/bootstrap.min.css">
 
 	<!-- http://writing.colin-gourlay.com/safely-using-ready-before-including-jquery/ -->

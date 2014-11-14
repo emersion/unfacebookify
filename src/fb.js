@@ -15,7 +15,7 @@ ejs.filters.linkify = function (str) {
 	return linkify(str || '', { attributes: { target: '_blank' } });
 };
 ejs.filters.nl2br = function (str) {
-	return String(str).replace('\n', '<br>');
+	return String(str).replace('\n', '<br />');
 };
 app.engine('ejs', ejs.renderFile);
 
@@ -187,7 +187,7 @@ if (config.cache.auto_refresh) {
 }
 
 function getReqUrl(req) {
-	return req.protocol + '://' + req.get('host') + req.originalUrl;
+	return req.protocol + '://' + (config.host || req.get('host')) + req.originalUrl;
 }
 
 function getGroup(attrValue, attrName) {
@@ -201,8 +201,11 @@ function getGroup(attrValue, attrName) {
 		}
 	}
 }
+function getDefaultGroup() {
+	return getGroup(true, 'default');
+}
 
-function showGroup(groupName, res) {
+function showGroup(groupName, res, suffix) {
 	// Get the group
 	var group = getGroup(groupName);
 	if (!group) {
@@ -224,8 +227,12 @@ function showGroup(groupName, res) {
 				return;
 			}
 
-			res.render('feed.ejs', {
+			res.render('feed'+((suffix) ? '_'+suffix : '')+'.ejs', {
+				layout: {
+					atom: '/'+group.name+'/feed.atom'
+				},
 				data: data,
+				group: group,
 				postByEmail: {
 					enabled: config.watch.enabled,
 					address: config.notify.from,
@@ -437,13 +444,10 @@ app.get('/:group/auth', function (req, res) {
 });
 
 app.get('/', function (req, res) {
-	for (var i = 0; i < config.groups.length; i++) {
-		var group = config.groups[i];
-
-		if (group.default) {
-			showGroup(group.name, res);
-			return;
-		}
+	var group = getDefaultGroup();
+	if (group) {
+		showGroup(group.name, res);
+		return;
 	}
 
 	if (config.allow_add) {
@@ -453,6 +457,23 @@ app.get('/', function (req, res) {
 
 	// No group found
 	res.status(400).send('No group specified :-( cannot send sausage');
+});
+
+app.get('/feed.atom', function (req, res) {
+	var group = getDefaultGroup();
+	if (group) {
+		res.setHeader('Content-Type', 'application/atom+xml');
+		showGroup(group.name, res, 'atom');
+		return;
+	}
+
+	// No group found
+	res.status(400).send('No group specified :-( cannot send sausage');
+});
+
+app.get('/:group/feed.atom', function (req, res) {
+	res.setHeader('Content-Type', 'application/atom+xml');
+	showGroup(req.params.group, res, 'atom');
 });
 
 app.get('/:group', function (req, res) {

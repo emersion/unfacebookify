@@ -1,0 +1,44 @@
+<%
+function RFC3339(d) {
+	function pad(n) { return n < 10 ? '0' + n : n }
+	return d.getUTCFullYear()+'-'
+		+ pad(d.getUTCMonth()+1)+'-'
+		+ pad(d.getUTCDate())+'T'
+		+ pad(d.getUTCHours())+':'
+		+ pad(d.getUTCMinutes())+':'
+		+ pad(d.getUTCSeconds())+'Z'
+}
+%><?xml version="1.0" encoding="utf-8"?>
+<feed xmlns="http://www.w3.org/2005/Atom">
+	<title><%= group.title %></title>
+	<subtitle>Unfacebookify</subtitle>
+	<updated><%= RFC3339(new Date()) %></updated>
+	<id>https://facebook.com/<%= group.id %></id>
+	<link href="/<%= group.name %>"/>
+	<link href="/<%= group.name %>/feed.atom" rel="self"/>
+	<generator>Unfacebookify</generator>
+
+	<% data.forEach(function (post) { %>
+	<entry>
+		<id>https://facebook.com/<%= post.id %></id>
+		<link href="/<%= group.name %>#post-<%= post.id %>"/>
+		<published><%= RFC3339(new Date(post.created_time)) %></published>
+		<updated><%= RFC3339(new Date(post.updated_time)) %></updated>
+		<title><%= post.from.name %></title>
+		<content type="xhtml">
+			<div xmlns="http://www.w3.org/1999/xhtml">
+				<p><%-: post.message | linkify | nl2br %></p>
+			</div>
+		</content>
+		<author>
+			<name><%= post.from.name %></name>
+			<uri>https://facebook.com/<%= post.from.id %></uri>
+		</author>
+		<source>
+			<id>https://facebook.com/<%= post.id %></id>
+			<title>Facebook</title>
+			<updated><%= RFC3339(new Date(post.updated_time)) %></updated>
+		</source>
+	</entry>
+	<% }) %>
+</feed>
