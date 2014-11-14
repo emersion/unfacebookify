@@ -3,7 +3,7 @@ unfacebookify
 
 Allow unregistered Facebook users to access a group's posts.
 
-**Live demo: http://unfacebookify.emersion.fr**
+**Live demo: http://unfacebookify.emersion.fr** (if you want to add your groups, you'll have to create your own Facebook app - [see this guide](https://github.com/emersion/unfacebookify/wiki/Use-a-custom-Facebook-app))
 
 ## How it looks like
 
@@ -16,6 +16,7 @@ Unfacebookify displays for each post a box containing the message and the commen
 * Shows posts and comments with profile pictures, displays well links and e-mail addresses
 * Caching (maximum and minimum update frequency in config)
 * Multiple groups (access a group by typing `/{group_name}` in the URL)
+* ATOM feed (`/{group_name}/feed.atom`)
 * Option to let everyone unfacebookify any group by logging in with their Facebook account
 * E-mail notifications
 * Allow users to post to a Facebook group by e-mail
