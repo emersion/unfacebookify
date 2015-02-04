@@ -223,7 +223,12 @@ function showGroup(groupName, res, suffix) {
 		var cb = function (err, data) {
 			if (err) {
 				console.error(err);
-				res.status(500).send('Could not retrieve this group data: '+err.message);
+
+				var msg = 'Could not retrieve this group data: '+err.message;
+				if (err.type == 'OAuthException') {
+					msg += '<br /><a href="/'+groupName+'/auth?override=1">Login in again</a>';
+				}
+				res.status(500).send(msg);
 				return;
 			}
 
@@ -403,7 +408,7 @@ app.get('/:group/auth', function (req, res) {
 		return;
 	}
 
-	if (group.access_token) {
+	if (group.access_token && !req.query.override) {
 		req.query.code = group.access_token;
 	}
 
