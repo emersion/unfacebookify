@@ -3,8 +3,6 @@ unfacebookify
 
 Allow unregistered Facebook users to access a group's posts.
 
-**Live demo: http://unfacebookify.emersion.fr** (if you want to add your groups, you'll have to create your own Facebook app - [see this guide](https://github.com/emersion/unfacebookify/wiki/Use-a-custom-Facebook-app))
-
 ## How it looks like
 
 Unfacebookify displays for each post a box containing the message and the comments.
